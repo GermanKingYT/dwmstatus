@@ -155,6 +155,52 @@ getbattery(char *base)
     return smprintf("%.0f", ((float)remcap / (float)descap) * 100);
 }
 
+float getram(){
+    int total, free;
+    FILE *f;
+
+    f = fopen("/proc/meminfo", "r");
+
+    if(f == NULL){
+        perror("fopen");
+        exit(1);
+    }
+
+    // MemTotal and MemFree reside on the first two lines of /proc/meminfo
+    fscanf(f, "%*s %d %*s %*s %d", &total, &free);
+    fclose(f);
+
+    return (float)(total-free)/total * 100;
+}
+
+int getnumcores(){
+    FILE *f;
+    char line[513];
+    int numcores = 0;
+    f = fopen("/proc/cpuinfo", "r");
+
+    while(!feof(f) && fgets(line, sizeof(line)-1, f) != NULL){
+        if(strstr(line, "processor")){
+            numcores++;
+        }
+    }
+
+    fclose(f);
+
+    return numcores;
+}
+
+double getcpu(int numcores){
+    double load[1];
+
+    if (getloadavg(load, 1) < 0) {
+        perror("getloadavg");
+        exit(1);
+    }
+
+    return (double)load[0]/numcores * 100;
+}
+
 int
 main(void)
 {
@@ -168,18 +214,20 @@ main(void)
         return 1;
     }
 
-    for (;;sleep(90)) {
+    int numcores = getnumcores();
+
+    for (;;sleep(5)) {
         avgs = loadavg();
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
         if(NULL != bat){
-            status = smprintf("[L: %s :: B: %s%% :: %s]",
-                    avgs, bat, tmbuc);
+            status = smprintf("[ram: %0.f%% :: cpu: %.0f%% :: load: %s :: bat: %s%% :: %s]",
+                    getram(), getcpu(numcores), avgs, bat, tmbuc);
         }
         else{
-            status = smprintf("[L: %s :: %s]",
-                    avgs, tmbuc);
+            status = smprintf("[ram: %0.f%% :: cpu: %.0f%% :: load: %s :: %s]",
+                    getram(), getcpu(numcores), avgs, tmbuc);
         }
 
         setstatus(status);
