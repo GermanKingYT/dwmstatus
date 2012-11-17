@@ -12,9 +12,7 @@
 
 #include <X11/Xlib.h>
 
-char *tzargentina = "America/Buenos_Aires";
-char *tzutc = "UTC";
-char *tzberlin = "Europe/Berlin";
+char *tzbuc = "Europe/Bucharest";
 
 static Display *dpy;
 
@@ -105,8 +103,9 @@ getbattery(char *base)
 	path = smprintf("%s/info", base);
 	fd = fopen(path, "r");
 	if (fd == NULL) {
-		perror("fopen");
-		exit(1);
+		/*perror("fopen");*/
+		/*exit(1);*/
+        return NULL;
 	}
 	free(path);
 	while (!feof(fd)) {
@@ -161,10 +160,8 @@ main(void)
 {
 	char *status;
 	char *avgs;
-	char *bat;
-	char *tmar;
-	char *tmutc;
-	char *tmbln;
+    char *bat;
+	char *tmbuc;
 
 	if (!(dpy = XOpenDisplay(NULL))) {
 		fprintf(stderr, "dwmstatus: cannot open display.\n");
@@ -173,19 +170,22 @@ main(void)
 
 	for (;;sleep(90)) {
 		avgs = loadavg();
-		bat = getbattery("/proc/acpi/battery/BAT0");
-		tmar = mktimes("%H:%M", tzargentina);
-		tmutc = mktimes("%H:%M", tzutc);
-		tmbln = mktimes("KW %W %a %d %b %H:%M %Z %Y", tzberlin);
+        bat = getbattery("/proc/acpi/battery/BAT0");
+		tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
-		status = smprintf("[L: %s|B: %s%%|A: %s|U: %s|%s]",
-				avgs, bat, tmar, tmutc, tmbln);
+        if(NULL != bat){
+            status = smprintf("[L: %s :: B: %s%% :: %s]",
+                    avgs, bat, tmbuc);
+        }
+        else{
+            status = smprintf("[L: %s :: %s]",
+                    avgs, tmbuc);
+        }
+
 		setstatus(status);
 		free(avgs);
-		free(bat);
-		free(tmar);
-		free(tmutc);
-		free(tmbln);
+        free(bat);
+		free(tmbuc);
 		free(status);
 	}
 
@@ -193,4 +193,3 @@ main(void)
 
 	return 0;
 }
-
