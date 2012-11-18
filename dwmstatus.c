@@ -275,6 +275,11 @@ main(void)
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
+        //TODO: entries as bat and swap shouldn't be displayed if the computer is
+        //plugged in or if the swap usage is 0
+        //
+        //TODO: try to change the functions NOT to malloc so much
+
         if(NULL != bat){
             status = smprintf("[ram: %0.f%% :: cpu: %d%% :: swap: %0.f%% :: load: %s :: bat: %s%% :: %s]",
                     getram(), getcpu(numcores), getswap(), avgs, bat, tmbuc);
