@@ -295,6 +295,8 @@ main(void)
     char *bat;
     char *tmbuc;
 
+    float swap;
+
     if (!(dpy = XOpenDisplay(NULL))) {
         fprintf(stderr, "dwmstatus: cannot open display.\n");
         return 1;
@@ -302,26 +304,27 @@ main(void)
 
     int numcores = getnumcores();
 
-    for (;;sleep(5)) {
+    for (;;sleep(1)) {
         avgs = loadavg();
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
-        //TODO: entries as bat and swap shouldn't be displayed if the computer is
-        //plugged in or if the swap usage is 0
-        //
-        //TODO: try to change the functions NOT to malloc so much
+        swap = getswap();
 
-        if(NULL != bat){
-            status = smprintf("[ram: %0.f%% • cpu: %d%% • swap: %0.f%% • load: %s • bat: %s%% • %s]",
-                    getram(), getcpu(numcores), getswap(), avgs, bat, tmbuc);
+        status = smprintf("[ram: %0.f%% • cpu: %d%%", getram(), getcpu(numcores));
+
+        if(swap >= 1){
+            status = smprintf("%s • swap: %.0f%%", status, swap);
         }
-        else{
-            status = smprintf("[ram: %0.f%% • cpu: %d%% • swap: %0.f%% • load: %s • %s]",
-                    getram(), getcpu(numcores), getswap(), avgs, tmbuc);
+
+        if(bat != NULL){
+            status = smprintf("%s • bat: %s%%", status, bat);
         }
+
+        status = srprintf(status, "%s • %s]", status, tmbuc);
 
         setstatus(status);
+
         free(avgs);
         free(bat);
         free(tmbuc);
