@@ -221,6 +221,40 @@ int getcpu(int numcores){
     return (int)(load[0]/numcores * 100)%100;
 }
 
+/**
+ * Get the current swap usage as a procentage
+ *
+ * @return float a number representing what proportion of the swap is in use
+ * eg: 42.3 meaning that 42.3% of the swap is used
+ */
+float getswap(){
+    char line[513];
+    int total = -1, free = -1;
+    FILE *f;
+
+    f = fopen("/proc/meminfo", "r");
+
+    if(f == NULL){
+        perror("fopen");
+        exit(1);
+    }
+
+    while(!feof(f) && fgets(line, sizeof(line)-1, f) != NULL
+            && (total == -1 || free == -1)){
+        if(strstr(line, "SwapTotal")){
+            sscanf(line, "%*s %d", &total);
+        }
+
+        if(strstr(line, "SwapFree")){
+            sscanf(line, "%*s %d", &free);
+        }
+    }
+
+    fclose(f);
+
+    return (float)(total-free)/total * 100;
+}
+
 int
 main(void)
 {
@@ -242,12 +276,12 @@ main(void)
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
         if(NULL != bat){
-            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: load: %s :: bat: %s%% :: %s]",
-                    getram(), getcpu(numcores), avgs, bat, tmbuc);
+            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: swap: %0.f%% :: load: %s :: bat: %s%% :: %s]",
+                    getram(), getcpu(numcores), getswap(), avgs, bat, tmbuc);
         }
         else{
-            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: load: %s :: %s]",
-                    getram(), getcpu(numcores), avgs, tmbuc);
+            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: swap: %0.f%% :: load: %s :: %s]",
+                    getram(), getcpu(numcores), getswap(), avgs, tmbuc);
         }
 
         setstatus(status);
