@@ -259,30 +259,44 @@ float getswap(){
     return (float)(total-free)/total * 100;
 }
 
-char * srprintf(char *ptr, char * fmt, ...){
+
+/**
+ * Replace a string with a formatted one
+ *
+ * @param char **str the string to be replaced
+ * @param char *fmt the format of the replacement string
+ * @param ... a list of variables to be formatted
+ *
+ * @return int the number characters in the final string or a negative if errors
+ * occured (in which case str is unchanged)
+ */
+int srprintf(char **str, char *fmt, ...){
     va_list fmtargs;
-    char *retval;
+    char *replacement;
     int len;
 
     va_start(fmtargs, fmt);
     len = vsnprintf(NULL, 0, fmt, fmtargs);
     va_end(fmtargs);
 
-    /*retval = (char *) realloc(ptr, ++len);*/
-    retval = (char *) malloc(++len);
+    // tried realloc here, but since it can resize the memory block whithout
+    // changing the location the original contents of the str could be lost if
+    // str itself was sent as an argument to be formatted (ie: in fmtargs)
+    replacement = (char *) malloc(++len);
 
-    if(retval == NULL){
+    if(replacement == NULL){
         perror("malloc");
-        exit(1);
+        return -1;
     }
 
     va_start(fmtargs, fmt);
-    vsnprintf(retval, len, fmt, fmtargs);
+    vsnprintf(replacement, len, fmt, fmtargs);
     va_end(fmtargs);
 
-    free(ptr);
+    free(*str);
+    *str = replacement;
 
-    return retval;
+    return len;
 }
 
 int
@@ -314,14 +328,14 @@ main(void)
         status = smprintf("[ram: %0.f%% • cpu: %d%%", getram(), getcpu(numcores));
 
         if(swap >= 1){
-            status = srprintf(status, "%s • swap: %.0f%%", status, swap);
+            srprintf(&status, "%s • swap: %.0f%%", status, swap);
         }
 
         if(bat != NULL){
-            status = srprintf(status, "%s • bat: %s%%", status, bat);
+            srprintf(&status, "%s • bat: %s%%", status, bat);
         }
 
-        status = srprintf(status, "%s • %s]", status, tmbuc);
+        srprintf(&status, "%s • %s]", status, tmbuc);
 
         setstatus(status);
 
