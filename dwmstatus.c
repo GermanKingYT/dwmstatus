@@ -156,7 +156,7 @@ getbattery(char *base)
 }
 
 /**
- * Get the current RAM usage as a procentage
+ * Get the current RAM usage as a percentage
  *
  * @return float a number representing what proportion of the RAM is in use
  * eg: 42.3 meaning that 42.3% of the RAM is used
@@ -208,7 +208,7 @@ int getnumcores(){
  *
  * @param int numcores the number of cores the current CPU has
  *
- * @return The return value is an int representing a procentage of one core load
+ * @return The return value is an int representing a percentage of one core load
  * eg: 42 which means 42% of one core is used and 84% of the whole CPU is used
  */
 int getcpu(int numcores){
@@ -223,7 +223,7 @@ int getcpu(int numcores){
 }
 
 /**
- * Get the current swap usage as a procentage
+ * Get the current swap usage as a percentage
  *
  * @return float a number representing what proportion of the swap is in use
  * eg: 42.3 meaning that 42.3% of the swap is used
