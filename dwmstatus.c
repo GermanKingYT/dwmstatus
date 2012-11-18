@@ -155,6 +155,12 @@ getbattery(char *base)
     return smprintf("%.0f", ((float)remcap / (float)descap) * 100);
 }
 
+/**
+ * Get the current RAM usage as a procentage
+ *
+ * @return float a number representing what proportion of the RAM is in use
+ * eg: 42.3 meaning that 42.3% of the RAM is used
+ */
 float getram(){
     int total, free;
     FILE *f;
@@ -173,6 +179,11 @@ float getram(){
     return (float)(total-free)/total * 100;
 }
 
+/**
+ * Get the number of core the CPU has
+ *
+ * @return int the number of cores
+ */
 int getnumcores(){
     FILE *f;
     char line[513];
