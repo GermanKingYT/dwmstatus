@@ -103,6 +103,7 @@ getbattery(char *base)
     path = smprintf("%s/info", base);
     fd = fopen(path, "r");
     if (fd == NULL) {
+        free(path);
         /*perror("fopen");*/
         /*exit(1);*/
         return NULL;
@@ -128,6 +129,7 @@ getbattery(char *base)
     path = smprintf("%s/state", base);
     fd = fopen(path, "r");
     if (fd == NULL) {
+        free(path);
         perror("fopen");
         exit(1);
     }
