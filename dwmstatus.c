@@ -10,7 +10,16 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <mpd/client.h>
+#include <mpd/status.h>
+#include <mpd/entity.h>
+#include <mpd/search.h>
+#include <mpd/tag.h>
+
 #include <X11/Xlib.h>
+
+#define MPDHOST "localhost"
+#define MPDPORT 6600
 
 char *tzbuc = "Europe/Bucharest";
 
@@ -299,15 +308,65 @@ int srprintf(char **str, char *fmt, ...){
     return len;
 }
 
+// echo -e 'status\ncurrentsong\nclose' | curl --connect-timeout 1 -fsm3 telnet://127.0.0.1:6600
+char *
+getmpd() {
+    const struct mpd_song *song;
+    const char *artist;
+    const char *title;
+    const char *name;
+    char *retval;
+    struct mpd_connection *conn;
+
+    conn = mpd_connection_new(MPDHOST,MPDPORT, 30000);
+
+    if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS){
+        mpd_connection_free(conn);
+        return NULL;
+    }
+
+    mpd_command_list_begin(conn, true);
+    mpd_send_current_song(conn);
+    mpd_command_list_end(conn);
+
+    while((song = mpd_recv_song(conn)) != NULL){
+        artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
+        title = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
+        name = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
+    }
+
+    mpd_connection_free(conn);
+
+    if(title){
+        if(artist){
+            retval = smprintf("%s - %s", artist, title);
+        }
+        else{
+            retval = smprintf("%s", title);
+        }
+
+        return retval;
+    }
+
+    if(name){
+        return smprintf("%s", name);
+    }
+
+    return NULL;
+}
+
 int
 main(void)
 {
     //TODO: what happens with avgs, bat, etc if I exit at an exit(1) aka: FREE
     //THEM!
+    //TODO: current network usage, weather stats, current mpd song, computer
+    //temperature, vol, check: https://code.google.com/p/dwm-hacks/
     char *status;
     char *avgs;
     char *bat;
     char *tmbuc;
+    char *mpd;
 
     float swap;
 
@@ -322,10 +381,17 @@ main(void)
         avgs = loadavg();
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
+        mpd = getmpd();
 
         swap = getswap();
 
-        status = smprintf("[ram: %0.f%% • cpu: %d%%", getram(), getcpu(numcores));
+        status = smprintf("[");
+
+        if(mpd != NULL){
+            srprintf(&status, "%s%s • ", status, mpd);
+        }
+
+        srprintf(&status, "%sram: %0.f%% • cpu: %d%%", status, getram(), getcpu(numcores));
 
         if(swap >= 1){
             srprintf(&status, "%s • swap: %.0f%%", status, swap);
@@ -342,6 +408,7 @@ main(void)
         free(avgs);
         free(bat);
         free(tmbuc);
+        free(mpd);
         free(status);
     }
 
