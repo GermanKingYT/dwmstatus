@@ -201,7 +201,16 @@ int getnumcores(){
     return numcores;
 }
 
-double getcpu(int numcores){
+/**
+ * Get the current (per core) CPU load
+ * http://stackoverflow.com/a/3017332/770023
+ *
+ * @param int numcores the number of cores the current CPU has
+ *
+ * @return The return value is an int representing a procentage of one core load
+ * eg: 42 which means 42% of one core is used and 84% of the whole CPU is used
+ */
+int getcpu(int numcores){
     double load[1];
 
     if (getloadavg(load, 1) < 0) {
@@ -209,7 +218,7 @@ double getcpu(int numcores){
         exit(1);
     }
 
-    return (double)load[0]/numcores * 100;
+    return (int)(load[0]/numcores * 100)%100;
 }
 
 int
@@ -233,11 +242,11 @@ main(void)
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
 
         if(NULL != bat){
-            status = smprintf("[ram: %0.f%% :: cpu: %.0f%% :: load: %s :: bat: %s%% :: %s]",
+            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: load: %s :: bat: %s%% :: %s]",
                     getram(), getcpu(numcores), avgs, bat, tmbuc);
         }
         else{
-            status = smprintf("[ram: %0.f%% :: cpu: %.0f%% :: load: %s :: %s]",
+            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: load: %s :: %s]",
                     getram(), getcpu(numcores), avgs, tmbuc);
         }
 
