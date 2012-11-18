@@ -314,11 +314,11 @@ main(void)
         status = smprintf("[ram: %0.f%% • cpu: %d%%", getram(), getcpu(numcores));
 
         if(swap >= 1){
-            status = smprintf("%s • swap: %.0f%%", status, swap);
+            status = srprintf(status, "%s • swap: %.0f%%", status, swap);
         }
 
         if(bat != NULL){
-            status = smprintf("%s • bat: %s%%", status, bat);
+            status = srprintf(status, "%s • bat: %s%%", status, bat);
         }
 
         status = srprintf(status, "%s • %s]", status, tmbuc);
