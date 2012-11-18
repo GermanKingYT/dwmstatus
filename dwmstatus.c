@@ -93,6 +93,7 @@ loadavg(void)
 char *
 getbattery(char *base)
 {
+    //TODO: return NULL if plugged in
     char *path, line[513];
     FILE *fd;
     int descap, remcap;
@@ -258,9 +259,37 @@ float getswap(){
     return (float)(total-free)/total * 100;
 }
 
+char * srprintf(char *ptr, char * fmt, ...){
+    va_list fmtargs;
+    char *retval;
+    int len;
+
+    va_start(fmtargs, fmt);
+    len = vsnprintf(NULL, 0, fmt, fmtargs);
+    va_end(fmtargs);
+
+    /*retval = (char *) realloc(ptr, ++len);*/
+    retval = (char *) malloc(++len);
+
+    if(retval == NULL){
+        perror("malloc");
+        exit(1);
+    }
+
+    va_start(fmtargs, fmt);
+    vsnprintf(retval, len, fmt, fmtargs);
+    va_end(fmtargs);
+
+    free(ptr);
+
+    return retval;
+}
+
 int
 main(void)
 {
+    //TODO: what happens with avgs, bat, etc if I exit at an exit(1) aka: FREE
+    //THEM!
     char *status;
     char *avgs;
     char *bat;
