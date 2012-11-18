@@ -282,11 +282,11 @@ main(void)
         //TODO: try to change the functions NOT to malloc so much
 
         if(NULL != bat){
-            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: swap: %0.f%% :: load: %s :: bat: %s%% :: %s]",
+            status = smprintf("[ram: %0.f%% • cpu: %d%% • swap: %0.f%% • load: %s • bat: %s%% • %s]",
                     getram(), getcpu(numcores), getswap(), avgs, bat, tmbuc);
         }
         else{
-            status = smprintf("[ram: %0.f%% :: cpu: %d%% :: swap: %0.f%% :: load: %s :: %s]",
+            status = smprintf("[ram: %0.f%% • cpu: %d%% • swap: %0.f%% • load: %s • %s]",
                     getram(), getcpu(numcores), getswap(), avgs, tmbuc);
         }
 
