@@ -162,7 +162,7 @@ getbattery(char *base)
  * eg: 42.3 meaning that 42.3% of the RAM is used
  */
 float getram(){
-    int total, free;
+    int total, free, buffers, cached;
     FILE *f;
 
     f = fopen("/proc/meminfo", "r");
@@ -173,10 +173,11 @@ float getram(){
     }
 
     // MemTotal and MemFree reside on the first two lines of /proc/meminfo
-    fscanf(f, "%*s %d %*s %*s %d", &total, &free);
+    fscanf(f, "%*s %d %*s %*s %d %*s %*s %d %*s %*s %d", &total, &free,
+            &buffers, &cached);
     fclose(f);
 
-    return (float)(total-free)/total * 100;
+    return (float)(total-free-buffers-cached)/total * 100;
 }
 
 /**
