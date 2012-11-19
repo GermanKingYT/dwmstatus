@@ -307,6 +307,27 @@ int srprintf(char **str, char *fmt, ...){
     return len;
 }
 
+int remove_ext(char *str){
+    char *dot = strrchr(str, '.');
+
+    if(dot){
+        *dot = '\0';
+        return dot-str+1;
+    }
+
+    return -1;
+}
+
+char *get_filename(const char *str){
+    char *dir_sep = strrchr(str, '/');
+
+    if(dir_sep == NULL){
+        return (char *)str;
+    }
+
+    return dir_sep+1;
+}
+
 char *
 getmpd() {
     struct mpd_connection *conn;
