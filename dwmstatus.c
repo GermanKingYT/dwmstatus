@@ -11,9 +11,6 @@
 #include <sys/wait.h>
 
 #include <mpd/client.h>
-#include <mpd/status.h>
-#include <mpd/entity.h>
-#include <mpd/search.h>
 #include <mpd/tag.h>
 
 #include <X11/Xlib.h>
@@ -222,6 +219,8 @@ int getnumcores(){
  *
  * @return The return value is an int representing a percentage of one core load
  * eg: 42 which means 42% of one core is used and 84% of the whole CPU is used
+ *
+ * TODO: use /proc/stat
  */
 int getcpu(int numcores){
     double load[1];
@@ -308,50 +307,90 @@ int srprintf(char **str, char *fmt, ...){
     return len;
 }
 
-// echo -e 'status\ncurrentsong\nclose' | curl --connect-timeout 1 -fsm3 telnet://127.0.0.1:6600
 char *
 getmpd() {
-    const struct mpd_song *song;
+    struct mpd_connection *conn;
+    struct mpd_song *song;
+    struct mpd_status *status;
     const char *artist;
     const char *title;
     const char *name;
-    char *retval;
-    struct mpd_connection *conn;
+    char *retval = smprintf("");
 
     conn = mpd_connection_new(MPDHOST,MPDPORT, 30000);
 
     if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS){
+        fprintf(stderr, "%s", mpd_connection_get_error_message(conn));
+        mpd_connection_free(conn);
+
+        return NULL;
+    }
+
+    status = mpd_run_status(conn);
+
+    if(status == NULL){
+        fprintf(stderr, "Cannot get MPD status!\n");
         mpd_connection_free(conn);
         return NULL;
     }
 
-    mpd_command_list_begin(conn, true);
-    mpd_send_current_song(conn);
-    mpd_command_list_end(conn);
+    enum mpd_state state = mpd_status_get_state(status);
 
-    while((song = mpd_recv_song(conn)) != NULL){
-        artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
-        title = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
-        name = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
+    if(state == MPD_STATE_STOP || state == MPD_STATE_UNKNOWN){
+        mpd_status_free(status);
+        mpd_connection_free(conn);
+
+        return NULL;
+    }
+    else if(state == MPD_STATE_PAUSE){
+        srprintf(&retval, "(p) ");
     }
 
+    song = mpd_run_current_song(conn);
+
+    if(song == NULL){
+        fprintf(stderr, "Error fetching current song!\n");
+        mpd_status_free(status);
+        mpd_connection_free(conn);
+
+        return NULL;
+    }
+
+    artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
+    title = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
+    name = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
+
+    /**
+     * TODO: parse these before the last "return NULL;"
+     * dir name/file name.ext -> file name
+     * file name.ext -> file name
+     * http://stream.foo.bar:8020/ -> http://stream.foo.bar:8020/
+     */
+    const char *uri = mpd_song_get_uri(song);
+
+    mpd_status_free(status);
     mpd_connection_free(conn);
 
     if(title){
         if(artist){
-            retval = smprintf("%s - %s", artist, title);
+            srprintf(&retval, "%s%s - %s", retval, artist, title);
         }
         else{
-            retval = smprintf("%s", title);
+            srprintf(&retval, "%s%s", retval, title);
         }
 
+        mpd_song_free(song);
         return retval;
     }
 
     if(name){
-        return smprintf("%s", name);
+        srprintf(&retval, "%s%s", retval, name);
+
+        mpd_song_free(song);
+        return retval;
     }
 
+    mpd_song_free(song);
     return NULL;
 }
 
