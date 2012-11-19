@@ -336,7 +336,7 @@ getmpd() {
     const char *artist;
     const char *title;
     const char *name;
-    char *retval = smprintf("");
+    char *retval;
 
     conn = mpd_connection_new(MPDHOST,MPDPORT, 30000);
 
@@ -364,7 +364,9 @@ getmpd() {
         return NULL;
     }
     else if(state == MPD_STATE_PAUSE){
-        srprintf(&retval, "(p) ");
+        mpd_status_free(status);
+        mpd_connection_free(conn);
+        return smprintf("paused");
     }
 
     song = mpd_run_current_song(conn);
@@ -381,23 +383,15 @@ getmpd() {
     title = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
     name = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
 
-    /**
-     * TODO: parse these before the last "return NULL;"
-     * dir name/file name.ext -> file name
-     * file name.ext -> file name
-     * http://stream.foo.bar:8020/ -> http://stream.foo.bar:8020/
-     */
-    const char *uri = mpd_song_get_uri(song);
-
     mpd_status_free(status);
     mpd_connection_free(conn);
 
     if(title){
         if(artist){
-            srprintf(&retval, "%s%s - %s", retval, artist, title);
+            retval = smprintf("%s - %s", artist, title);
         }
         else{
-            srprintf(&retval, "%s%s", retval, title);
+            retval = smprintf("%s", title);
         }
 
         mpd_song_free(song);
@@ -405,14 +399,21 @@ getmpd() {
     }
 
     if(name){
-        srprintf(&retval, "%s%s", retval, name);
+        retval = smprintf("%s", name);
 
         mpd_song_free(song);
         return retval;
     }
 
+    const char *uri = mpd_song_get_uri(song);
+
+    remove_ext((char *)uri);
+    uri = get_filename(uri);
+
+    retval = smprintf("%s", uri);
+
     mpd_song_free(song);
-    return NULL;
+    return retval;
 }
 
 int
