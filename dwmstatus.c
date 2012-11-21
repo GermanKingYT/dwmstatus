@@ -190,48 +190,28 @@ float getram(){
     return (float)(total-free-buffers-cached)/total * 100;
 }
 
-/**
- * Get the number of core the CPU has
- *
- * @return int the number of cores
- */
-int getnumcores(){
+struct cpuusage{
+    long int total, used;
+};
+
+struct cpuusage getcpu(){
+    long int user, nice, system, idle, iowait, irq, softirq;
+    struct cpuusage usage;
+
     FILE *f;
-    char line[513];
-    int numcores = 0;
-    f = fopen("/proc/cpuinfo", "r");
+    f = fopen("/proc/stat", "r");
 
-    while(!feof(f) && fgets(line, sizeof(line)-1, f) != NULL){
-        if(strstr(line, "processor")){
-            numcores++;
-        }
-    }
-
-    fclose(f);
-
-    return numcores;
-}
-
-/**
- * Get the current (per core) CPU load
- * http://stackoverflow.com/a/3017332/770023
- *
- * @param int numcores the number of cores the current CPU has
- *
- * @return The return value is an int representing a percentage of one core load
- * eg: 42 which means 42% of one core is used and 84% of the whole CPU is used
- *
- * TODO: use /proc/stat
- */
-int getcpu(int numcores){
-    double load[1];
-
-    if (getloadavg(load, 1) < 0) {
-        perror("getloadavg");
+    if(f == NULL){
+        perror("fopen");
         exit(1);
     }
 
-    return (int)(load[0]/numcores * 100)%100;
+    fscanf(f, "%*s %ld %ld %ld %ld %ld %ld %ld", &user, &nice, &system, &idle, &iowait, &irq, &softirq);
+
+    usage.used = user + nice + system + irq +softirq;
+    usage.total = user + nice + system + idle + iowait + irq +softirq;
+
+    return usage;
 }
 
 /**
@@ -463,7 +443,11 @@ main(void)
         return 1;
     }
 
-    int numcores = getnumcores();
+    struct cpuusage cpu_i_usage = getcpu();
+    struct cpuusage cpu_f_usage;
+
+    double cpu_used, cpu_total;
+
     struct netusage net_i_usage = getnet(iface);
     struct netusage net_f_usage;
 
@@ -472,6 +456,7 @@ main(void)
     char *unit_in = "kb", *unit_out = "kb";
 
     for (;;sleep(1)) {
+        cpu_f_usage = getcpu();
         net_f_usage = getnet(iface);
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
@@ -499,8 +484,11 @@ main(void)
             srprintf(&status, "%s%s • ", status, mpd);
         }
 
-        srprintf(&status, "%sram: %0.f%% • cpu: %d%% • down: %.0lf %s/s • up: %.0lf %s/s",
-                status, getram(), getcpu(numcores), net_in, unit_in, net_out, unit_out);
+        cpu_used = cpu_f_usage.used - cpu_i_usage.used;
+        cpu_total = cpu_f_usage.total - cpu_i_usage.total;
+
+        srprintf(&status, "%sram: %0.f%% • cpu: %.0f%% • down: %.0f %s/s • up: %.0f %s/s",
+                status, getram(), cpu_used/cpu_total*100, net_in, unit_in, net_out, unit_out);
 
         if(swap >= 1){
             srprintf(&status, "%s • swap: %.0f%%", status, swap);
@@ -520,6 +508,7 @@ main(void)
         free(status);
 
         net_i_usage = net_f_usage;
+        cpu_i_usage = cpu_f_usage;
     }
 
     XCloseDisplay(dpy);
