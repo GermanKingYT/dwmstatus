@@ -435,7 +435,8 @@ struct netusage getnet(const char *iface){
 
     while(!feof(f) && fgets(line, sizeof(line)-1, f) != NULL ){
         if(strstr(line, iface)){
-            sscanf(line, "%*s %ld %*d %*d %*d %*d %*d %*d %*d %ld", &usage.in, &usage.out);
+            sscanf(line, "%*s %ld %*d %*d %*d %*d %*d %*d %*d %ld",
+                    &usage.in, &usage.out);
         }
     }
 
@@ -449,10 +450,8 @@ main(void)
 {
     //TODO: what happens with avgs, bat, etc if I exit at an exit(1) aka: FREE
     //THEM!
-    //TODO: current network usage, weather stats, computer
-    //temperature, check: https://code.google.com/p/dwm-hacks/
+    //TODO: weather stats, computer temperature, check: https://code.google.com/p/dwm-hacks/
     char *status;
-    char *avgs;
     char *bat;
     char *tmbuc;
     char *mpd;
@@ -474,7 +473,6 @@ main(void)
 
     for (;;sleep(1)) {
         net_f_usage = getnet(iface);
-        avgs = loadavg();
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
         mpd = getmpd();
@@ -514,7 +512,6 @@ main(void)
 
         setstatus(status);
 
-        free(avgs);
         free(bat);
         free(tmbuc);
         free(mpd);
