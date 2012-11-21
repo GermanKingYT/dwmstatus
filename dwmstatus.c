@@ -19,6 +19,7 @@
 #define MPDPORT 6600
 
 char *tzbuc = "Europe/Bucharest";
+char *iface = "eth0";
 
 static Display *dpy;
 
@@ -416,13 +417,40 @@ getmpd() {
     return retval;
 }
 
+struct netusage{
+    long int in, out;
+};
+
+struct netusage getnet(const char *iface){
+    FILE *f;
+    char line[513];
+    struct netusage usage;
+
+    f = fopen("/proc/net/dev", "r");
+
+    if(f == NULL){
+        perror("fopen");
+        exit(1);
+    }
+
+    while(!feof(f) && fgets(line, sizeof(line)-1, f) != NULL ){
+        if(strstr(line, iface)){
+            sscanf(line, "%*s %ld %*d %*d %*d %*d %*d %*d %*d %ld", &usage.in, &usage.out);
+        }
+    }
+
+    fclose(f);
+
+    return usage;
+}
+
 int
 main(void)
 {
     //TODO: what happens with avgs, bat, etc if I exit at an exit(1) aka: FREE
     //THEM!
-    //TODO: current network usage, weather stats, current mpd song, computer
-    //temperature, vol, check: https://code.google.com/p/dwm-hacks/
+    //TODO: current network usage, weather stats, computer
+    //temperature, check: https://code.google.com/p/dwm-hacks/
     char *status;
     char *avgs;
     char *bat;
@@ -437,13 +465,15 @@ main(void)
     }
 
     int numcores = getnumcores();
+    struct netusage net_i_usage = getnet(iface);
+    struct netusage net_f_usage;
 
     for (;;sleep(1)) {
+        net_f_usage = getnet(iface);
         avgs = loadavg();
         bat = getbattery("/proc/acpi/battery/BAT0");
         tmbuc = mktimes("%d-%m-%Y %R", tzbuc);
         mpd = getmpd();
-
         swap = getswap();
 
         status = smprintf("[");
@@ -452,7 +482,10 @@ main(void)
             srprintf(&status, "%s%s • ", status, mpd);
         }
 
-        srprintf(&status, "%sram: %0.f%% • cpu: %d%%", status, getram(), getcpu(numcores));
+        srprintf(&status, "%sram: %0.f%% • cpu: %d%% • down: %.0lf kb/s up: %.0lf kb/s",
+                status, getram(), getcpu(numcores),
+                (double)(net_f_usage.in - net_i_usage.in)/1024,
+                (double)(net_f_usage.out - net_i_usage.out)/1024);
 
         if(swap >= 1){
             srprintf(&status, "%s • swap: %.0f%%", status, swap);
@@ -471,6 +504,8 @@ main(void)
         free(tmbuc);
         free(mpd);
         free(status);
+
+        net_i_usage = net_f_usage;
     }
 
     XCloseDisplay(dpy);
