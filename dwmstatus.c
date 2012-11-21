@@ -480,6 +480,8 @@ main(void)
 
         net_in = (float)(net_f_usage.in - net_i_usage.in)/1024; //kilobytes
         net_out = (float)(net_f_usage.out - net_i_usage.out)/1024; //kilobytes
+        unit_in = "kb";
+        unit_out = "kb";
 
         if(net_in > 1024){
             net_in /= 1024; // megabytes
