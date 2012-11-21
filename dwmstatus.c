@@ -468,6 +468,10 @@ main(void)
     struct netusage net_i_usage = getnet(iface);
     struct netusage net_f_usage;
 
+    float net_in, net_out;
+
+    char *unit_in = "kb", *unit_out = "kb";
+
     for (;;sleep(1)) {
         net_f_usage = getnet(iface);
         avgs = loadavg();
@@ -476,16 +480,27 @@ main(void)
         mpd = getmpd();
         swap = getswap();
 
+        net_in = (float)(net_f_usage.in - net_i_usage.in)/1024; //kilobytes
+        net_out = (float)(net_f_usage.out - net_i_usage.out)/1024; //kilobytes
+
+        if(net_in > 1024){
+            net_in /= 1024; // megabytes
+            unit_in = "mb";
+        }
+
+        if(net_out > 1024){
+            net_out /= 1024; // megabytes
+            unit_out = "mb";
+        }
+
         status = smprintf("[");
 
         if(mpd != NULL){
             srprintf(&status, "%s%s • ", status, mpd);
         }
 
-        srprintf(&status, "%sram: %0.f%% • cpu: %d%% • down: %.0lf kb/s up: %.0lf kb/s",
-                status, getram(), getcpu(numcores),
-                (double)(net_f_usage.in - net_i_usage.in)/1024,
-                (double)(net_f_usage.out - net_i_usage.out)/1024);
+        srprintf(&status, "%sram: %0.f%% • cpu: %d%% • down: %.0lf %s/s • up: %.0lf %s/s",
+                status, getram(), getcpu(numcores), net_in, unit_in, net_out, unit_out);
 
         if(swap >= 1){
             srprintf(&status, "%s • swap: %.0f%%", status, swap);
