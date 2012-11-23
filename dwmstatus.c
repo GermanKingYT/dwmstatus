@@ -358,6 +358,7 @@ getmpd() {
 
     if(song == NULL){
         fprintf(stderr, "Error fetching current song!\n");
+        mpd_song_free(song);
         mpd_status_free(status);
         mpd_connection_free(conn);
 
