@@ -333,7 +333,9 @@ getmpd() {
     status = mpd_run_status(conn);
 
     if(status == NULL){
-        fprintf(stderr, "Cannot get MPD status!\n");
+        fprintf(stderr, "Cannot get mpd status: %s\n", mpd_status_get_error(status));
+
+        mpd_status_free(status);
         mpd_connection_free(conn);
         return NULL;
     }
