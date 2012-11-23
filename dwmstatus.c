@@ -211,6 +211,8 @@ struct cpuusage getcpu(){
     usage.used = user + nice + system + irq +softirq;
     usage.total = user + nice + system + idle + iowait + irq +softirq;
 
+    fclose(f);
+
     return usage;
 }
 
