@@ -321,7 +321,7 @@ getmpd() {
     const char *name;
     char *retval;
 
-    conn = mpd_connection_new(MPDHOST,MPDPORT, 30000);
+    conn = mpd_connection_new(MPDHOST,MPDPORT, 1000);
 
     if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS){
         fprintf(stderr, "%s", mpd_connection_get_error_message(conn));
