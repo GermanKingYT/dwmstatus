@@ -435,7 +435,30 @@ main(void)
 {
     //TODO: what happens with avgs, bat, etc if I exit at an exit(1) aka: FREE
     //THEM!
-    //TODO: weather stats, computer temperature, check: https://code.google.com/p/dwm-hacks/
+    //TODO: weather stats, computer temperature, battery, check: https://code.google.com/p/dwm-hacks/
+    //
+    /**
+     * I'm planning on a big design change which will make the parts of the
+     * program independent and asynchronous.
+     *
+     * First, main() will update the status at a given interval.
+     * Secondly, each part will be able to request an update whenever an event
+     * happens, for example the weather part can minutely check the change of
+     * weather and when the weather changes it can request a status update even
+     * though the main program is not scheduled to run one soon.
+     *
+     * These program "parts" will run in their own thread and will set a
+     * variable that can be read from the main program, so when a status update
+     * is due that variable is read by the updating function, the same happens
+     * for unscheduled updates, whenever there is an update from a program part,
+     * the variable is updated and then the updating function is called. This
+     * way even if other parts don't have an update the old one can be read from
+     * the variable.
+     * This variable will be read by a function which acts as an interface.
+     *
+     * Also the program parts will be initialized at dwmstatus startup, this is
+     * when all the threads are started.
+     */
     char *status;
     char *bat;
     char *tmbuc;
