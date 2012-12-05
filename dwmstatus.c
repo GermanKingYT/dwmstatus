@@ -458,6 +458,11 @@ main(void)
      *
      * Also the program parts will be initialized at dwmstatus startup, this is
      * when all the threads are started.
+     *
+     * Long term: allow the user to script this using python, the user will
+     * write just the core of one module in python, for example is easier to
+     * write a weather script in python and run it from a module of dwmstatus
+     * instead of writing the processing part in C.
      */
     char *status;
     char *bat;
