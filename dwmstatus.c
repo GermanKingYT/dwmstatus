@@ -182,9 +182,12 @@ float getram(){
         exit(1);
     }
 
-    // MemTotal and MemFree reside on the first two lines of /proc/meminfo
-    fscanf(f, "%*s %d %*s %*s %d %*s %*s %d %*s %*s %d", &total, &free,
-            &buffers, &cached);
+    fscanf(f, "%*s %d %*s" // mem total
+              "%*s %d %*s" // mem free
+              "%*s %*d %*s" // mem available
+              "%*s %d %*s" // buffers
+              "%*s %d", //cached
+              &total, &free, &buffers, &cached);
     fclose(f);
 
     return (float)(total-free-buffers-cached)/total * 100;
